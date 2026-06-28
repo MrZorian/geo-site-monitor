@@ -32,7 +32,7 @@ def settings():
 def get_stats():
     stats = storage.get_stats()
     stats['target_stats'] = storage.get_stats_by_target()
-    stats['proxy_count'] = len(ConfigSetting.get('PROXY_LIST', '').split(',')) if ConfigSetting.get('PROXY_LIST') else 0
+    stats['proxy_count'] = len([p for p in ConfigSetting.get('PROXY_LIST', '').split(',') if p.strip()]) if ConfigSetting.get('PROXY_LIST') else 0
     return jsonify(stats)
 
 @app.route('/api/logs')
@@ -44,10 +44,9 @@ def get_logs():
             'id': log.get('id', 0),
             'timestamp': log['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
             'target_url': log.get('target_url', '-'),
-            'proxy_used': log.get('proxy_used', 'direct')[:30] + '...' if len(log.get('proxy_used', '')) > 30 else log.get('proxy_used', 'direct'),
+            'proxy_used': log.get('proxy_used', 'direct')[:25] + '...' if len(log.get('proxy_used', '')) > 25 else log.get('proxy_used', 'direct'),
             'pages_visited': log.get('pages_visited', 0),
-            'session_duration': round(log.get('session_duration', 0), 1),
-            'avg_load_time': round(log.get('avg_load_time', 0), 2) if log.get('avg_load_time') else None,
+            'session_duration': round(log.get('session_duration', 0), 0),
             'status': log.get('status', 'unknown'),
             'status_color': 'success' if log.get('status') == 'success' else 'error' if log.get('status') == 'failed' else 'warning'
         })
@@ -59,10 +58,13 @@ def api_settings():
         data = request.json
         for key, value in data.items():
             ConfigSetting.set(key, value)
+            # Also update environment for immediate use
+            os.environ[key] = value
         return jsonify({'success': True})
     
+    # GET - return current settings
     return jsonify({
-        'TARGET_URLS': ConfigSetting.get('TARGET_URLS', 'https://example.com'),
+        'TARGET_URLS': ConfigSetting.get('TARGET_URLS', ''),
         'PROXY_LIST': ConfigSetting.get('PROXY_LIST', ''),
         'SESSIONS_PER_DAY': ConfigSetting.get('SESSIONS_PER_DAY', '35'),
         'MIN_SESSION_DURATION': ConfigSetting.get('MIN_SESSION_DURATION', '240'),
@@ -75,7 +77,7 @@ def api_settings():
 @app.route('/api/run-now', methods=['POST'])
 def run_now():
     if current_status['is_running']:
-        return jsonify({'success': False, 'error': 'Already running'}), 429
+        return jsonify({'success': False, 'error': 'Session already running'}), 429
     
     def run():
         current_status['is_running'] = True
