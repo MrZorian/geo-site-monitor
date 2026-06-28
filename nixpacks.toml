@@ -1,8 +1,12 @@
 [phases.setup]
-nixPkgs = ["...", "chromium"]
+nixPkgs = ["...", "chromium", "chromedriver"]
 
 [phases.build]
-cmds = ["echo 'Chrome installed'"]
+cmds = [
+    "echo 'Chrome installed'",
+    "which chromium",
+    "which chromedriver"
+]
 
 [start]
 cmd = "gunicorn --worker-class eventlet -w 1 app:app --bind 0.0.0.0:$PORT"
