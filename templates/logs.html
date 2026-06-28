@@ -1,24 +1,195 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Logs | Website Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #111936;
+            --accent-primary: #6366f1;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(99, 102, 241, 0.2);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.2);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .page-header p {
+            color: var(--text-secondary);
+        }
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            min-width: 200px;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            background: var(--accent-primary);
+            color: white;
+        }
+        .logs-table-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .logs-table th {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+        .logs-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .logs-table tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-badge.success { background: rgba(16, 185, 129, 0.2); color: var(--accent-success); }
+        .status-badge.error { background: rgba(239, 68, 68, 0.2); color: var(--accent-danger); }
+        .proxy-cell {
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        .load-time {
+            color: var(--accent-success);
+            font-weight: 600;
+        }
+        .error-count {
+            color: var(--accent-danger);
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            transition: transform 0.3s;
+        }
+        .refresh-btn:hover {
+            transform: scale(1.1);
+        }
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
     <nav class="navbar">
-        <div class="nav-brand">Website Monitor</div>
+        <div class="nav-brand"><i class="fas fa-chart-line"></i> Website Monitor</div>
         <ul class="nav-links">
             <li><a href="/">Dashboard</a></li>
-            <li><a href="/logs" class="active">Logs</a></li>
+            <li><a href="/logs" class="active">Full Logs</a></li>
             <li><a href="/settings">Settings</a></li>
         </ul>
     </nav>
 
     <div class="container">
-        <h1>Session Logs</h1>
-        
-        <div class="logs-controls">
-            <input type="text" id="searchInput" placeholder="Search logs..." class="search-input">
-            <select id="statusFilter" class="filter-select">
+        <div class="page-header">
+            <h1><i class="fas fa-history"></i> Session Logs</h1>
+            <p>Complete history of all monitoring sessions</p>
+        </div>
+
+        <div class="filters">
+            <input type="text" class="filter-input" id="searchInput" placeholder="Search logs...">
+            <select class="filter-input" id="statusFilter">
                 <option value="">All Status</option>
                 <option value="success">Success</option>
-                <option value="failed">Failed</option>
-                <option value="running">Running</option>
+                <option value="error">Failed</option>
             </select>
+            <button class="btn" onclick="exportLogs()"><i class="fas fa-download"></i> Export</button>
         </div>
 
         <div class="logs-table-container">
@@ -27,22 +198,96 @@
                     <tr>
                         <th>ID</th>
                         <th>Timestamp</th>
-                        <th>Proxy</th>
+                        <th>Proxy Used</th>
                         <th>Pages</th>
                         <th>Duration</th>
                         <th>Avg Load</th>
-                        <th>Status</th>
                         <th>Errors</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="logsTableBody">
+                    <tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
-
-        <div class="pagination" id="pagination">
-        </div>
     </div>
 
-    
+    <button class="refresh-btn" onclick="loadLogs()" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
 
+    <script>
+        let allLogs = [];
+        
+        async function loadLogs() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
+            
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                allLogs = data.logs;
+                renderLogs(allLogs);
+            } catch (e) {
+                console.error('Failed to load logs:', e);
+            } finally {
+                btn.classList.remove('spinning');
+            }
+        }
+        
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logsTableBody');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 3rem;">No logs found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td>#${log.id}</td>
+                    <td>${log.timestamp}</td>
+                    <td class="proxy-cell">${log.proxy_used}</td>
+                    <td>${log.pages_visited}</td>
+                    <td>${log.session_duration}s</td>
+                    <td class="load-time">${log.avg_load_time || '-'}s</td>
+                    <td class="${log.errors_count > 0 ? 'error-count' : ''}">${log.errors_count || '-'}</td>
+                    <td><span class="status-badge ${log.status_color}">${log.status}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        function exportLogs() {
+            const csv = [
+                ['ID', 'Timestamp', 'Proxy', 'Pages', 'Duration', 'Avg Load', 'Errors', 'Status'],
+                ...allLogs.map(l => [l.id, l.timestamp, l.proxy_used, l.pages_visited, l.session_duration, l.avg_load_time, l.errors_count, l.status])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+        
+        // Filter functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allLogs.filter(l => 
+                l.proxy_used.toLowerCase().includes(term) ||
+                l.timestamp.toLowerCase().includes(term)
+            );
+            renderLogs(filtered);
+        });
+        
+        document.getElementById('statusFilter').addEventListener('change', (e) => {
+            const status = e.target.value;
+            const filtered = status ? allLogs.filter(l => l.status === status) : allLogs;
+            renderLogs(filtered);
+        });
+        
+        loadLogs();
+        setInterval(loadLogs, 30000); // Auto refresh every 30s
+    </script>
+</body>
+</html>
