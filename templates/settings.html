@@ -59,7 +59,6 @@
             color: #94a3b8;
             font-size: 0.875rem;
         }
-        .form-group input,
         .form-group textarea {
             width: 100%;
             background: #0a0e27;
@@ -68,14 +67,19 @@
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
             font-size: 0.875rem;
+            min-height: 100px;
+            font-family: monospace;
         }
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #6366f1;
+        .form-group input {
+            width: 100%;
+            background: #0a0e27;
+            border: 1px solid rgba(99,102,241,0.2);
+            color: #f8fafc;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
         }
-        
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         
         .btn { 
             padding: 0.875rem 2rem; 
@@ -83,15 +87,8 @@
             border-radius: 0.5rem; 
             cursor: pointer;
             font-weight: 600;
-        }
-        .btn-primary { 
-            background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: white;
-        }
-        .btn-secondary {
-            background: #0a0e27;
-            color: #f8fafc;
-            border: 1px solid rgba(99,102,241,0.2);
         }
         
         .checkbox-group {
@@ -114,6 +111,20 @@
             transition: all 0.3s;
         }
         .save-notice.show { transform: translateY(0); opacity: 1; }
+        
+        .url-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .url-badge {
+            background: rgba(99,102,241,0.2);
+            color: #6366f1;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
@@ -128,65 +139,66 @@
 
     <div class="container">
         <h1><i class="fas fa-cog"></i> Configuration</h1>
-        <p class="subtitle">Customize your monitoring preferences</p>
+        <p class="subtitle">Add your websites to monitor</p>
 
         <form id="settingsForm">
             <div class="card">
-                <h3><i class="fas fa-globe"></i> Target Websites</h3>
+                <h3><i class="fas fa-globe"></i> Your Websites (One per line)</h3>
                 <div class="form-group">
-                    <label>Website URLs to Monitor (one per line)</label>
-                    <textarea name="TARGET_URLS" id="targetUrls" rows="4" 
-                        placeholder="https://website1.com&#10;https://website2.com&#10;https://website3.com"></textarea>
-                    <small style="color: #94a3b8;">Enter each URL on a new line</small>
+                    <label>Target URLs to Visit</label>
+                    <textarea name="TARGET_URLS" id="targetUrls" rows="5" 
+                        placeholder="https://yourwebsite1.com&#10;https://yourwebsite2.com&#10;https://yourwebsite3.com"></textarea>
+                    <small style="color: #94a3b8;">Enter each website URL on a new line. These are the ONLY sites that will be visited.</small>
                 </div>
+                <div class="url-list" id="urlList"></div>
             </div>
 
             <div class="card">
-                <h3><i class="fas fa-network-wired"></i> Proxy Configuration</h3>
+                <h3><i class="fas fa-network-wired"></i> Proxy List</h3>
                 <div class="form-group">
-                    <label>Proxy List (comma separated)</label>
+                    <label>Proxies (comma separated)</label>
                     <textarea name="PROXY_LIST" id="proxyList" rows="3" 
-                        placeholder="http://user:pass@proxy:port"></textarea>
+                        placeholder="http://user:pass@proxy1:port, http://user:pass@proxy2:port"></textarea>
                 </div>
             </div>
 
             <div class="card">
                 <h3><i class="fas fa-sliders-h"></i> Session Settings</h3>
-                <div class="row">
+                <div class="form-row">
                     <div class="form-group">
                         <label>Sessions Per Day</label>
-                        <input type="number" name="SESSIONS_PER_DAY" id="sessionsPerDay" value="35">
+                        <input type="number" name="SESSIONS_PER_DAY" value="35">
                     </div>
                     <div class="form-group">
                         <label>Pages Per Session</label>
-                        <input type="number" name="PAGES_PER_SESSION" id="pagesPerSession" value="4">
+                        <input type="number" name="PAGES_PER_SESSION" value="4">
                     </div>
                 </div>
-                <div class="row">
+                <div class="form-row">
                     <div class="form-group">
                         <label>Min Duration (seconds)</label>
-                        <input type="number" name="MIN_SESSION_DURATION" id="minDuration" value="240">
+                        <input type="number" name="MIN_SESSION_DURATION" value="240">
                     </div>
                     <div class="form-group">
                         <label>Max Duration (seconds)</label>
-                        <input type="number" name="MAX_SESSION_DURATION" id="maxDuration" value="300">
+                        <input type="number" name="MAX_SESSION_DURATION" value="300">
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3><i class="fas fa-desktop"></i> Browser Options</h3>
+                <h3><i class="fas fa-desktop"></i> Options</h3>
                 <div class="form-group checkbox-group">
                     <input type="checkbox" name="HEADLESS" id="headless" checked>
-                    <label for="headless" style="margin: 0;">Run in Headless Mode</label>
+                    <label for="headless">Run Hidden (Headless)</label>
                 </div>
                 <div class="form-group checkbox-group">
                     <input type="checkbox" name="USER_AGENT_ROTATION" id="userAgentRotation" checked>
-                    <label for="userAgentRotation" style="margin: 0;">Rotate User Agents</label>
+                    <label for="userAgentRotation">Rotate User Agents</label>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn">
                 <i class="fas fa-save"></i> Save Settings
             </button>
         </form>
@@ -201,13 +213,19 @@
         fetch('/api/settings')
             .then(r => r.json())
             .then(settings => {
+                // Populate form
                 Object.keys(settings).forEach(key => {
                     const el = document.querySelector(`[name="${key}"]`);
                     if (el) {
                         if (el.type === 'checkbox') {
                             el.checked = settings[key].toLowerCase() === 'true';
                         } else if (key === 'TARGET_URLS' && settings[key]) {
-                            el.value = settings[key].split(',').join('\n');
+                            el.value = settings[key].split(',').map(u => u.trim()).join('\n');
+                            // Show badges
+                            const urls = settings[key].split(',').filter(u => u.trim());
+                            document.getElementById('urlList').innerHTML = urls.map(u => 
+                                `<span class="url-badge">${u.trim()}</span>`
+                            ).join('');
                         } else {
                             el.value = settings[key];
                         }
@@ -224,8 +242,12 @@
                 if (input.type === 'checkbox') {
                     data[input.name] = input.checked.toString();
                 } else if (input.name === 'TARGET_URLS') {
-                    // Convert newlines to commas
-                    data[input.name] = input.value.split('\n').map(u => u.trim()).filter(u => u).join(',');
+                    // Convert newlines to commas, filter out example.com
+                    const urls = input.value.split('\n')
+                        .map(u => u.trim())
+                        .filter(u => u && !u.includes('example.com'))
+                        .join(',');
+                    data[input.name] = urls;
                 } else {
                     data[input.name] = input.value;
                 }
@@ -238,6 +260,12 @@
             });
             
             if (response.ok) {
+                // Update display
+                const urls = data['TARGET_URLS'].split(',').filter(u => u.trim());
+                document.getElementById('urlList').innerHTML = urls.map(u => 
+                    `<span class="url-badge">${u.trim()}</span>`
+                ).join('');
+                
                 const notice = document.getElementById('saveNotice');
                 notice.classList.add('show');
                 setTimeout(() => notice.classList.remove('show'), 3000);
