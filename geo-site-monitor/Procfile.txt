@@ -1,2 +1,0 @@
-web: gunicorn --worker-class eventlet -w 1 app:app --bind 0.0.0.0:$PORT
-worker: python -c "from app import app, init_scheduler; app.app_context().push(); init_scheduler(); import time; time.sleep(999999)"
