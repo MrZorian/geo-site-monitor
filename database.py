@@ -1,62 +1,88 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
 
-db = SQLAlchemy()
-
-class SessionLog(db.Model):
-    __tablename__ = 'session_logs'
+# Simple in-memory storage - clears when app restarts
+class MemoryStorage:
+    def __init__(self):
+        self.logs = []
+        self.config = {}
     
-    id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    proxy_used = db.Column(db.String(500))
-    pages_visited = db.Column(db.Integer)
-    session_duration = db.Column(db.Float)  # seconds
-    avg_load_time = db.Column(db.Float)
-    errors_found = db.Column(db.Text)  # JSON string
-    status = db.Column(db.String(50))  # success, failed, running
+    def add_log(self, log_data):
+        """Add a log entry, keep only last 100"""
+        log_data['id'] = len(self.logs) + 1
+        log_data['timestamp'] = datetime.utcnow()
+        self.logs.append(log_data)
+        # Keep only last 100 logs
+        if len(self.logs) > 100:
+            self.logs = self.logs[-100:]
     
-    def to_dict(self):
+    def get_logs(self, limit=50):
+        """Get recent logs"""
+        return sorted(self.logs, key=lambda x: x['timestamp'], reverse=True)[:limit]
+    
+    def get_stats(self):
+        """Get basic stats"""
+        today = datetime.utcnow().date()
+        today_logs = [l for l in self.logs if l['timestamp'].date() == today]
+        
+        success_count = sum(1 for l in today_logs if l.get('status') == 'success')
+        
         return {
-            'id': self.id,
-            'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'proxy_used': self.proxy_used,
-            'pages_visited': self.pages_visited,
-            'session_duration': round(self.session_duration, 2),
-            'avg_load_time': round(self.avg_load_time, 2) if self.avg_load_time else None,
-            'errors_found': json.loads(self.errors_found) if self.errors_found else [],
-            'status': self.status
+            'today_sessions': len(today_logs),
+            'total_sessions': len(self.logs),
+            'success_rate': round((success_count / len(today_logs) * 100), 2) if today_logs else 0,
+            'avg_load_time': 0  # Simplified
         }
+    
+    def set_config(self, key, value):
+        self.config[key] = value
+    
+    def get_config(self, key, default=None):
+        return self.config.get(key, default)
 
-class ConfigSetting(db.Model):
-    __tablename__ = 'config_settings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(100), unique=True)
-    value = db.Column(db.Text)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+# Global instance
+storage = MemoryStorage()
+
+# Fake classes for compatibility
+class SessionLog:
+    @staticmethod
+    def query():
+        class FakeQuery:
+            def filter(self, *args):
+                return self
+            def order_by(self, *args):
+                return self
+            def paginate(self, page=1, per_page=20, error_out=False):
+                logs = storage.get_logs(per_page)
+                class Result:
+                    items = logs
+                    total = len(storage.logs)
+                    pages = 1
+                return Result
+            def count(self):
+                return len(storage.logs)
+            def all(self):
+                return storage.get_logs(100)
+        return FakeQuery()
+
+class ConfigSetting:
     @staticmethod
     def get(key, default=None):
-        setting = ConfigSetting.query.filter_by(key=key).first()
-        return setting.value if setting else default
+        return storage.get_config(key, default)
     
     @staticmethod
     def set(key, value):
-        setting = ConfigSetting.query.filter_by(key=key).first()
-        if setting:
-            setting.value = str(value)
-        else:
-            setting = ConfigSetting(key=key, value=str(value))
-            db.session.add(setting)
-        db.session.commit()
+        storage.set_config(key, value)
 
-class PageVisit(db.Model):
-    __tablename__ = 'page_visits'
+class PageVisit:
+    pass
+
+# Fake db object
+class FakeDB:
+    def init_app(self, app):
+        pass
     
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('session_logs.id'))
-    url = db.Column(db.String(1000))
-    load_time = db.Column(db.Float)
-    status_code = db.Column(db.Integer)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    def create_all(self):
+        pass
+
+db = FakeDB()
