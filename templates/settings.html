@@ -1,84 +1,350 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Website Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #111936;
+            --bg-card: #1a237e;
+            --accent-primary: #6366f1;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(99, 102, 241, 0.2);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.2);
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .page-header p {
+            color: var(--text-secondary);
+        }
+        .settings-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .settings-card h3 {
+            margin-bottom: 1.5rem;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .checkbox-group input {
+            width: auto;
+        }
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+            color: white;
+        }
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            margin-left: 0.5rem;
+        }
+        .proxy-test {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .proxy-test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+        .proxy-test-result.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-success);
+            color: var(--accent-success);
+            display: block;
+        }
+        .proxy-test-result.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+            display: block;
+        }
+        .save-status {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            background: var(--accent-success);
+            color: white;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .save-status.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
     <nav class="navbar">
-        <div class="nav-brand">Website Monitor</div>
+        <div class="nav-brand"><i class="fas fa-chart-line"></i> Website Monitor</div>
         <ul class="nav-links">
             <li><a href="/">Dashboard</a></li>
-            <li><a href="/logs">Logs</a></li>
+            <li><a href="/logs">Full Logs</a></li>
             <li><a href="/settings" class="active">Settings</a></li>
         </ul>
     </nav>
 
     <div class="container">
-        <h1>Configuration</h1>
-        
-        <form id="settingsForm" class="settings-form">
-            <div class="form-section">
-                <h3>Target Configuration</h3>
+        <div class="page-header">
+            <h1><i class="fas fa-cog"></i> Configuration</h1>
+            <p>Customize your monitoring preferences</p>
+        </div>
+
+        <form id="settingsForm">
+            <div class="settings-card">
+                <h3><i class="fas fa-globe"></i> Target Website</h3>
                 <div class="form-group">
-                    <label for="targetUrl">Target URL</label>
-                    <input type="url" id="targetUrl" name="TARGET_URL" required="" placeholder="https://example.com">
+                    <label>Website URL to Monitor</label>
+                    <input type="url" name="TARGET_URL" id="targetUrl" required 
+                           placeholder="https://your-website.com">
                 </div>
             </div>
 
-            <div class="form-section">
-                <h3>Proxy Configuration</h3>
+            <div class="settings-card">
+                <h3><i class="fas fa-network-wired"></i> Proxy Configuration</h3>
                 <div class="form-group">
-                    <label for="proxyList">Proxy List (comma separated)</label>
-                    <textarea id="proxyList" name="PROXY_LIST" rows="4" placeholder="http://proxy1:port, http://user:pass@proxy2:port"></textarea>
-                    <small>Format: http://ip:port or http://user:pass@ip:port</small>
+                    <label>Proxy List (comma separated)</label>
+                    <textarea name="PROXY_LIST" id="proxyList" rows="4" 
+                              placeholder="http://user:pass@proxy:port"></textarea>
+                    <small style="color: var(--text-secondary);">Format: http://username:password@host:port</small>
                 </div>
-                <button type="button" id="testProxyBtn" class="btn btn-secondary">Test Random Proxy</button>
+                <div class="proxy-test">
+                    <button type="button" class="btn btn-secondary" onclick="testProxy()">
+                        <i class="fas fa-vial"></i> Test Proxy
+                    </button>
+                </div>
+                <div id="proxyTestResult" class="proxy-test-result"></div>
             </div>
 
-            <div class="form-section">
-                <h3>Session Settings</h3>
+            <div class="settings-card">
+                <h3><i class="fas fa-sliders-h"></i> Session Settings</h3>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="sessionsPerDay">Sessions Per Day</label>
-                        <input type="number" id="sessionsPerDay" name="SESSIONS_PER_DAY" min="1" max="100" value="35">
+                        <label>Sessions Per Day</label>
+                        <input type="number" name="SESSIONS_PER_DAY" id="sessionsPerDay" 
+                               min="1" max="100" value="35">
                     </div>
                     <div class="form-group">
-                        <label for="pagesPerSession">Pages Per Session</label>
-                        <input type="number" id="pagesPerSession" name="PAGES_PER_SESSION" min="1" max="10" value="4">
+                        <label>Pages Per Session</label>
+                        <input type="number" name="PAGES_PER_SESSION" id="pagesPerSession" 
+                               min="1" max="10" value="4">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="minDuration">Min Session Duration (seconds)</label>
-                        <input type="number" id="minDuration" name="MIN_SESSION_DURATION" min="60" value="240">
+                        <label>Min Duration (seconds)</label>
+                        <input type="number" name="MIN_SESSION_DURATION" id="minDuration" 
+                               min="60" value="240">
+                        <small style="color: var(--text-secondary);">4 minutes = 240 seconds</small>
                     </div>
                     <div class="form-group">
-                        <label for="maxDuration">Max Session Duration (seconds)</label>
-                        <input type="number" id="maxDuration" name="MAX_SESSION_DURATION" min="60" value="300">
+                        <label>Max Duration (seconds)</label>
+                        <input type="number" name="MAX_SESSION_DURATION" id="maxDuration" 
+                               min="60" value="300">
+                        <small style="color: var(--text-secondary);">5 minutes = 300 seconds</small>
                     </div>
                 </div>
             </div>
 
-            <div class="form-section">
-                <h3>Browser Options</h3>
+            <div class="settings-card">
+                <h3><i class="fas fa-desktop"></i> Browser Options</h3>
                 <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="headless" name="HEADLESS" checked="">
-                        Run in Headless Mode
-                    </label>
+                    <input type="checkbox" name="HEADLESS" id="headless" checked>
+                    <label for="headless" style="margin: 0;">Run in Headless Mode (hidden browser)</label>
                 </div>
                 <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="userAgentRotation" name="USER_AGENT_ROTATION" checked="">
-                        Rotate User Agents
-                    </label>
+                    <input type="checkbox" name="USER_AGENT_ROTATION" id="userAgentRotation" checked>
+                    <label for="userAgentRotation" style="margin: 0;">Rotate User Agents</label>
                 </div>
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
         </form>
-
-        <div id="testResult" class="test-result"></div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <div id="saveStatus" class="save-status">
+        <i class="fas fa-check-circle"></i> Settings saved!
+    </div>
 
-    
+    <script>
+        // Load settings
+        fetch('/api/settings')
+            .then(r => r.json())
+            .then(settings => {
+                Object.keys(settings).forEach(key => {
+                    const el = document.querySelector(`[name="${key}"]`);
+                    if (el) {
+                        if (el.type === 'checkbox') {
+                            el.checked = settings[key].toLowerCase() === 'true';
+                        } else {
+                            el.value = settings[key];
+                        }
+                    }
+                });
+            });
 
+        // Save settings
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {};
+            document.querySelectorAll('input, textarea').forEach(input => {
+                if (input.type === 'checkbox') {
+                    data[input.name] = input.checked.toString();
+                } else {
+                    data[input.name] = input.value;
+                }
+            });
+
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                const status = document.getElementById('saveStatus');
+                status.classList.add('show');
+                setTimeout(() => status.classList.remove('show'), 3000);
+            }
+        });
+
+        // Test proxy
+        async function testProxy() {
+            const proxies = document.getElementById('proxyList').value.split(',').filter(p => p.trim());
+            if (proxies.length === 0) {
+                alert('No proxies configured');
+                return;
+            }
+            
+            const randomProxy = proxies[Math.floor(Math.random() * proxies.length)].trim();
+            const resultDiv = document.getElementById('proxyTestResult');
+            resultDiv.className = 'proxy-test-result';
+            resultDiv.textContent = 'Testing...';
+            resultDiv.style.display = 'block';
+            
+            const response = await fetch('/api/test-proxy', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({proxy: randomProxy})
+            });
+            
+            const result = await response.json();
+            resultDiv.className = 'proxy-test-result ' + (result.success ? 'success' : 'error');
+            resultDiv.textContent = result.success ? `✓ Proxy working! IP: ${result.ip}` : `✗ Failed: ${result.error}`;
+        }
+    </script>
+</body>
+</html>
