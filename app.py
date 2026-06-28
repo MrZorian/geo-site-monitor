@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import json
 import os
+import random  # BUG FIX #1: Added missing import
 
 from config import Config
 from database import db, SessionLog, PageVisit, ConfigSetting
@@ -173,8 +174,12 @@ def check_scheduler():
 
 if __name__ == '__main__':
     create_tables()
-    init_scheduler()
+    # BUG FIX #2: Wrapped init_scheduler in app_context
+    with app.app_context():
+        init_scheduler()
     socketio.run(app, host='0.0.0.0', port=Config.DASHBOARD_PORT, debug=True)
 else:
     create_tables()
-    init_scheduler()
+    # BUG FIX #2: Wrapped init_scheduler in app_context
+    with app.app_context():
+        init_scheduler()
