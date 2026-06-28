@@ -1,10 +1,334 @@
-<div class="target-card">
-    <div class="target-label"><i class="fas fa-globe"></i> Monitored Websites</div>
-    <div id="targetList" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-        <!-- Populated by JS -->
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Monitor Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27; 
+            color: #f8fafc; 
+            min-height: 100vh;
+        }
+        .navbar { 
+            background: #111936; 
+            padding: 1rem 2rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-bottom: 1px solid rgba(99,102,241,0.2);
+        }
+        .nav-brand { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            color: #6366f1;
+        }
+        .nav-links { display: flex; gap: 1rem; list-style: none; }
+        .nav-links a { 
+            color: #94a3b8; 
+            text-decoration: none; 
+            padding: 0.5rem 1rem; 
+            border-radius: 0.5rem;
+        }
+        .nav-links a:hover, .nav-links a.active { 
+            color: #f8fafc; 
+            background: rgba(99,102,241,0.2);
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 2rem;
+        }
+        .btn { 
+            padding: 0.75rem 1.5rem; 
+            border: none; 
+            border-radius: 0.5rem; 
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+            color: white;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 1.5rem; 
+            margin-bottom: 2rem;
+        }
+        .stat-card { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            padding: 1.5rem;
+        }
+        .stat-card h3 { color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #6366f1; }
+        
+        .target-card { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            margin-bottom: 2rem;
+        }
+        .target-card h3 { color: #94a3b8; margin-bottom: 1rem; }
+        .target-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .target-badge { 
+            background: rgba(99,102,241,0.2); 
+            color: #6366f1; 
+            padding: 0.5rem 1rem; 
+            border-radius: 2rem;
+            font-size: 0.875rem;
+        }
+        
+        .live-status { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            margin-bottom: 2rem;
+        }
+        .live-status.running { border-color: #10b981; }
+        .live-indicator { 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            background: #10b981;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        .live-status.running .live-indicator { animation: blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        
+        .logs-card { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            overflow: hidden;
+        }
+        .logs-header { 
+            padding: 1.5rem; 
+            border-bottom: 1px solid rgba(99,102,241,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logs-container { max-height: 400px; overflow-y: auto; }
+        .log-entry { 
+            padding: 1rem 1.5rem; 
+            border-bottom: 1px solid rgba(99,102,241,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .log-status { width: 8px; height: 8px; border-radius: 50%; }
+        .log-status.success { background: #10b981; }
+        .log-status.error { background: #ef4444; }
+        .log-status.warning { background: #f59e0b; }
+        
+        .toast { 
+            position: fixed; 
+            bottom: 2rem; 
+            right: 2rem; 
+            background: #111936;
+            border-left: 4px solid #6366f1;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+        }
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-chart-line"></i> Website Monitor</div>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Dashboard</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
 
-<div class="stats-grid" id="targetStats">
-    <!-- Stats per target will appear here -->
-</div>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Dashboard Overview</h1>
+                <p style="color: #94a3b8;">Real-time monitoring and analytics</p>
+            </div>
+            <button id="runNowBtn" class="btn btn-primary">
+                <i class="fas fa-play"></i> Run Session Now
+            </button>
+        </div>
+
+        <div class="live-status" id="liveStatus">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <span class="live-indicator"></span>
+                <span id="liveTitle">System Idle</span>
+            </div>
+            <div id="liveDetails" style="color: #94a3b8;">Waiting for next session...</div>
+        </div>
+
+        <div class="target-card">
+            <h3><i class="fas fa-globe"></i> Monitored Websites</h3>
+            <div class="target-list" id="targetList">
+                <span style="color: #94a3b8;">Loading...</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Today's Sessions</h3>
+                <div class="stat-value" id="todaySessions">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Success Rate</h3>
+                <div class="stat-value" id="successRate">-%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Avg Load Time</h3>
+                <div class="stat-value" id="avgLoadTime">-s</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Sessions</h3>
+                <div class="stat-value" id="totalSessions">-</div>
+            </div>
+        </div>
+
+        <div class="logs-card">
+            <div class="logs-header">
+                <h3><i class="fas fa-stream"></i> Live Activity</h3>
+                <span style="background: #ef4444; color: white; padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem;">LIVE</span>
+            </div>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-entry">
+                    <div class="log-content" style="color: #94a3b8;">Waiting for activity...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const socket = io();
+        
+        // Load data
+        async function loadData() {
+            try {
+                const stats = await fetch('/api/stats').then(r => r.json());
+                document.getElementById('todaySessions').textContent = stats.today_sessions;
+                document.getElementById('successRate').textContent = stats.success_rate + '%';
+                document.getElementById('avgLoadTime').textContent = (stats.avg_load_time || 0) + 's';
+                document.getElementById('totalSessions').textContent = stats.total_sessions;
+                
+                // Show targets
+                if (stats.target_stats) {
+                    const targets = Object.keys(stats.target_stats);
+                    document.getElementById('targetList').innerHTML = targets.map(url => 
+                        `<span class="target-badge">${url}</span>`
+                    ).join('');
+                }
+                
+                // Show logs
+                const logs = await fetch('/api/logs').then(r => r.json());
+                if (logs.logs.length > 0) {
+                    document.getElementById('logsContainer').innerHTML = logs.logs.slice(0, 10).map(log => `
+                        <div class="log-entry">
+                            <div class="log-status ${log.status_color}"></div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.75rem; color: #94a3b8;">${log.timestamp}</div>
+                                <div>${log.target_url || 'Unknown'}</div>
+                                <div style="font-size: 0.875rem; color: #94a3b8;">
+                                    ${log.pages_visited} pages | ${log.session_duration.toFixed(0)}s | ${log.proxy_used}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
+        }
+        
+        // Check status
+        async function checkStatus() {
+            try {
+                const status = await fetch('/api/status').then(r => r.json());
+                const liveStatus = document.getElementById('liveStatus');
+                const liveTitle = document.getElementById('liveTitle');
+                const runBtn = document.getElementById('runNowBtn');
+                
+                if (status.is_running) {
+                    liveStatus.classList.add('running');
+                    liveTitle.textContent = 'Session in Progress';
+                    document.getElementById('liveDetails').textContent = 'Running...';
+                    runBtn.disabled = true;
+                    runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+                } else {
+                    liveStatus.classList.remove('running');
+                    liveTitle.textContent = 'System Idle';
+                    document.getElementById('liveDetails').textContent = 'Waiting for next session...';
+                    runBtn.disabled = false;
+                    runBtn.innerHTML = '<i class="fas fa-play"></i> Run Session Now';
+                }
+            } catch (e) {}
+        }
+        
+        // Run now
+        document.getElementById('runNowBtn').addEventListener('click', async () => {
+            try {
+                const result = await fetch('/api/run-now', { method: 'POST' }).then(r => r.json());
+                if (result.success) {
+                    showToast('Session started!');
+                    checkStatus();
+                }
+            } catch (e) {
+                showToast('Failed to start', true);
+            }
+        });
+        
+        // Socket events
+        socket.on('session_started', () => {
+            showToast('Session started!');
+            checkStatus();
+        });
+        
+        socket.on('session_completed', () => {
+            showToast('Session completed!');
+            loadData();
+            checkStatus();
+        });
+        
+        socket.on('session_error', (data) => {
+            showToast('Error: ' + data.error, true);
+        });
+        
+        function showToast(message, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.borderLeftColor = isError ? '#ef4444' : '#6366f1';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Initialize
+        loadData();
+        checkStatus();
+        setInterval(() => { loadData(); checkStatus(); }, 10000);
+    </script>
+</body>
+</html>
