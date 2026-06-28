@@ -1,0 +1,75 @@
+
+    <nav class="navbar">
+        <div class="nav-brand">Website Monitor</div>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Dashboard</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-actions">
+            <h1>Dashboard</h1>
+            <button id="runNowBtn" class="btn btn-primary">Run Session Now</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>Today's Sessions</h3>
+                    <p class="stat-value" id="todaySessions">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3>Success Rate</h3>
+                    <p class="stat-value" id="successRate">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-content">
+                    <h3>Avg Load Time</h3>
+                    <p class="stat-value" id="avgLoadTime">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🌐</div>
+                <div class="stat-content">
+                    <h3>Total Sessions</h3>
+                    <p class="stat-value" id="totalSessions">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="target-info">
+            <h3>Target URL</h3>
+            <p id="targetUrl" class="url-display">-</p>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Session History (Last 7 Days)</h3>
+                <canvas id="sessionChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Load Time Trend</h3>
+                <canvas id="loadTimeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="recent-activity">
+            <h3>Recent Activity</h3>
+            <div id="activityList" class="activity-list">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    
+
