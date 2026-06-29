@@ -3,7 +3,6 @@ import random
 import logging
 import os
 import subprocess
-import re
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -133,21 +132,18 @@ class WebsiteMonitor:
             logger.warning(f"Scroll error: {e}")
     
     def find_and_click_ad(self):
-        """STRICT: Find and click on ads to earn money"""
+        """Find and click on ads to earn money"""
         try:
             logger.info("Looking for ads to click...")
             
-            # Multiple ad selectors (comprehensive list)
+            # Multiple ad selectors
             ad_selectors = [
-                # Google Ads
                 "ins.adsbygoogle",
                 "iframe[id*='google_ads']",
                 "iframe[name*='google']",
                 "div[id*='google_ad']",
                 "[data-ad-slot]",
                 "[data-ad-client]",
-                
-                # Generic ads
                 ".ad",
                 ".advertisement",
                 ".banner-ad",
@@ -155,41 +151,29 @@ class WebsiteMonitor:
                 "[class*='ads-']",
                 "[id*='ad-']",
                 "[id*='ads-']",
-                
-                # Common ad containers
                 "div[class*='advert']",
                 "div[id*='advert']",
                 "a[href*='ad.' i]",
                 "a[href*='ads.' i]",
                 "a[href*='click']",
                 "a[href*='redirect']",
-                
-                # Image ads
-                "img[width='728'][height='90']",  # Banner
-                "img[width='300'][height='250']",  # Medium rectangle
-                "img[width='160'][height='600']",  # Skyscraper
-                
-                # Links that open in new tab (often ads)
+                "img[width='728'][height='90']",
+                "img[width='300'][height='250']",
+                "img[width='160'][height='600']",
                 "a[target='_blank']",
-                
-                # Sponsored content
                 "[class*='sponsored']",
                 "[class*='promoted']",
-                
-                # Iframes (often contain ads)
                 "iframe:not([src*='youtube']):not([src*='vimeo'])"
             ]
             
             all_ads = []
             
-            # Try each selector
             for selector in ad_selectors:
                 try:
                     elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                     for el in elements:
                         try:
                             if el.is_displayed() and el.size['height'] > 30 and el.size['width'] > 30:
-                                # Check if clickable
                                 if el.tag_name in ['a', 'button', 'iframe', 'ins', 'div', 'img']:
                                     all_ads.append(el)
                         except:
@@ -197,7 +181,7 @@ class WebsiteMonitor:
                 except:
                     continue
             
-            # Remove duplicates (same element found by multiple selectors)
+            # Remove duplicates
             unique_ads = []
             seen = set()
             for ad in all_ads:
@@ -216,13 +200,13 @@ class WebsiteMonitor:
             logger.info(f"Found {len(unique_ads)} potential ads")
             
             # Pick random ad
-            ad = random.choice(unique_ads[:5])  # From first 5
+            ad = random.choice(unique_ads[:5])
             
             # Scroll to ad
             self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", ad)
             time.sleep(random.uniform(2, 4))
             
-            # Hover over ad first (human-like)
+            # Hover over ad first
             ActionChains(self.driver).move_to_element(ad).pause(random.uniform(0.5, 1.5)).perform()
             
             # Click the ad
@@ -231,7 +215,6 @@ class WebsiteMonitor:
             try:
                 ad.click()
             except:
-                # Try JavaScript click if normal click fails
                 self.driver.execute_script("arguments[0].click();", ad)
             
             # Wait for new tab/popup
@@ -244,7 +227,7 @@ class WebsiteMonitor:
                 self.driver.switch_to.window(new_window)
                 logger.info("Switched to ad tab")
                 
-                # SCROLL AD PAGE FOR 30-40 SECONDS (strict requirement)
+                # SCROLL AD PAGE FOR 30-40 SECONDS
                 ad_scroll_time = random.randint(30, 40)
                 logger.info(f"Scrolling ad page for {ad_scroll_time} seconds...")
                 self.human_like_scroll(ad_scroll_time)
@@ -255,7 +238,7 @@ class WebsiteMonitor:
                 logger.info("Returned to main page")
                 return True
             else:
-                # Ad opened in same tab (redirect)
+                # Ad opened in same tab
                 logger.info("Ad opened in same tab")
                 ad_scroll_time = random.randint(30, 40)
                 logger.info(f"Scrolling ad page for {ad_scroll_time} seconds...")
@@ -274,7 +257,6 @@ class WebsiteMonitor:
     def click_navigation_link(self, target_domain):
         """Click navigation links like About, Contact, etc."""
         try:
-            # Common navigation links
             nav_keywords = ['about', 'contact', 'services', 'products', 'blog', 'news', 'portfolio', 'gallery']
             
             links = self.driver.find_elements(By.TAG_NAME, "a")
@@ -285,11 +267,9 @@ class WebsiteMonitor:
                     text = link.text.lower().strip()
                     href = link.get_attribute('href') or ''
                     
-                    # Check if it's a navigation link
                     is_nav = any(keyword in text or keyword in href.lower() for keyword in nav_keywords)
                     
                     if is_nav and link.is_displayed():
-                        # Make sure it's internal
                         if target_domain in href or href.startswith('/'):
                             nav_links.append(link)
                 except:
@@ -323,7 +303,6 @@ class WebsiteMonitor:
                 try:
                     href = link.get_attribute('href')
                     if href and target_domain in href and link.is_displayed():
-                        # Skip anchors, javascript, mailto
                         if not href.startswith('#') and not href.startswith('javascript') and not href.startswith('mailto'):
                             internal_links.append(link)
                 except:
@@ -347,7 +326,7 @@ class WebsiteMonitor:
         return False
     
     def run_session(self):
-        """Run session with STRICT ad clicking and multi-page visits"""
+        """Run session with ad clicking and multi-page visits"""
         from database import storage
         
         targets = self.get_target_urls()
@@ -359,7 +338,6 @@ class WebsiteMonitor:
         target_domain = target_url.split('/')[2] if '//' in target_url else target_url
         
         logger.info(f"SESSION START: {target_url}")
-        logger.info(f"Domain: {target_domain}")
         
         session_data = {
             'pages_visited': 0,
@@ -382,53 +360,48 @@ class WebsiteMonitor:
             self.human_like_scroll(random.randint(15, 25))
             session_data['pages_visited'] += 1
             
-            # STEP 2: STRICT - Try to click ad on main page
-            logger.info("=== STEP 2: Click Ad on Main Page ===")
+            # STEP 2: Click ad on main page
+            logger.info("=== STEP 2: Click Ad ===")
             if self.find_and_click_ad():
                 session_data['ads_clicked'] += 1
                 session_data['pages_visited'] += 1
             
-            # STEP 3: Click navigation link (About/Contact/etc)
-            logger.info("=== STEP 3: Navigation Page ===")
+            # STEP 3: Navigation page
+            logger.info("=== STEP 3: Navigation ===")
             if self.click_navigation_link(target_domain):
                 session_data['pages_visited'] += 1
-                
-                # Try ad on navigation page
                 time.sleep(random.uniform(3, 6))
                 if self.find_and_click_ad():
                     session_data['ads_clicked'] += 1
                     session_data['pages_visited'] += 1
             
-            # STEP 4: Click another internal link
+            # STEP 4: Another page
             logger.info("=== STEP 4: Another Page ===")
             if self.click_random_internal_link(target_domain):
                 session_data['pages_visited'] += 1
-                
-                # Try ad on this page too
                 time.sleep(random.uniform(3, 6))
                 if self.find_and_click_ad():
                     session_data['ads_clicked'] += 1
                     session_data['pages_visited'] += 1
             
-            # STEP 5: One more page
+            # STEP 5: Final page
             logger.info("=== STEP 5: Final Page ===")
             if self.click_random_internal_link(target_domain):
                 session_data['pages_visited'] += 1
                 time.sleep(random.uniform(5, 10))
                 self.human_like_scroll(random.randint(10, 15))
             
-            # STRICT: Ensure 4-5 minute duration
+            # Ensure 4-5 minute duration
             elapsed = time.time() - session_data['start_time']
-            target_duration = random.randint(240, 300)  # 4-5 minutes
+            target_duration = random.randint(240, 300)
             
             if elapsed < target_duration:
                 wait_time = target_duration - elapsed
-                logger.info(f"Waiting extra {wait_time:.0f}s to reach 4-5 minutes...")
+                logger.info(f"Waiting extra {wait_time:.0f}s...")
                 time.sleep(wait_time)
             
             total_duration = time.time() - session_data['start_time']
             
-            # Save results
             storage.add_log({
                 'proxy_used': session_data['proxy_used'],
                 'target_url': target_url,
@@ -439,10 +412,10 @@ class WebsiteMonitor:
                 'status': 'success'
             })
             
-            logger.info(f"✓ COMPLETE: {total_duration:.0f}s, {session_data['pages_visited']} pages, {session_data['ads_clicked']} ads clicked")
+            logger.info(f"COMPLETE: {total_duration:.0f}s, {session_data['pages_visited']} pages, {session_data['ads_clicked']} ads")
             
         except Exception as e:
-            logger.error(f"✗ FAILED: {e}")
+            logger.error(f"FAILED: {e}")
             storage.add_log({
                 'proxy_used': session_data.get('proxy_used', 'unknown'),
                 'target_url': target_url,
