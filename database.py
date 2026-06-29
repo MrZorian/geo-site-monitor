@@ -19,22 +19,23 @@ class MemoryStorage:
     def get_stats(self):
         today = datetime.utcnow().date()
         today_logs = [l for l in self.logs if l['timestamp'].date() == today]
-        
         success_count = sum(1 for l in today_logs if l.get('status') == 'success')
         
         # Calculate totals
-        total_pages = sum(l.get('pages_visited', 0) for l in today_logs)
-        total_ads = sum(l.get('ads_clicked', 0) for l in today_logs)
+        total_pages = sum(l.get('pages_visited', 0) for l in self.logs)
+        total_ads = sum(l.get('ads_clicked', 0) for l in self.logs)
+        today_pages = sum(l.get('pages_visited', 0) for l in today_logs)
+        today_ads = sum(l.get('ads_clicked', 0) for l in today_logs)
         
         return {
             'today_sessions': len(today_logs),
             'total_sessions': len(self.logs),
             'success_rate': round((success_count / len(today_logs) * 100), 2) if today_logs else 0,
             'avg_load_time': 0,
-            'today_pages': total_pages,
-            'today_ads': total_ads,
-            'total_pages': sum(l.get('pages_visited', 0) for l in self.logs),
-            'total_ads': sum(l.get('ads_clicked', 0) for l in self.logs)
+            'total_pages': total_pages,
+            'total_ads': total_ads,
+            'today_pages': today_pages,
+            'today_ads': today_ads
         }
     
     def get_stats_by_target(self):
@@ -48,7 +49,7 @@ class MemoryStorage:
                 stats[target]['success'] += 1
         
         for target in stats:
-            stats[target]['success_rate'] = round((stats[target]['success'] / stats[target]['count']) * 100, 1) if stats[target]['count'] > 0 else 0
+            stats[target]['success_rate'] = round((stats[target]['success'] / stats[target]['count']) * 100, 1)
         
         return dict(stats)
     
