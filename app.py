@@ -5,6 +5,11 @@ from datetime import datetime
 import random
 import os
 import threading
+import time
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from database import storage, ConfigSetting
 from bot import WebsiteMonitor
@@ -40,11 +45,12 @@ def get_logs():
     logs = storage.get_logs(100)
     result = []
     for log in logs:
+        proxy = log.get('proxy_used') or 'direct'
         result.append({
             'id': log.get('id', 0),
             'timestamp': log['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
             'target_url': log.get('target_url', '-'),
-            'proxy_used': log.get('proxy_used', 'direct')[:25] + '...' if len(log.get('proxy_used', '')) > 25 else log.get('proxy_used', 'direct'),
+            'proxy_used': proxy[:25] + '...' if len(proxy) > 25 else proxy,
             'pages_visited': log.get('pages_visited', 0),
             'session_duration': round(log.get('session_duration', 0), 0),
             'status': log.get('status', 'unknown'),
@@ -58,11 +64,9 @@ def api_settings():
         data = request.json
         for key, value in data.items():
             ConfigSetting.set(key, value)
-            # Also update environment for immediate use
             os.environ[key] = value
         return jsonify({'success': True})
     
-    # GET - return current settings
     return jsonify({
         'TARGET_URLS': ConfigSetting.get('TARGET_URLS', ''),
         'PROXY_LIST': ConfigSetting.get('PROXY_LIST', ''),
@@ -108,17 +112,23 @@ scheduler = BackgroundScheduler()
 
 def scheduled_session():
     if current_status['is_running']:
+        logger.info("Session already running, skipping")
+        return
+    
+    time.sleep(2)
+    
+    if current_status['is_running']:
         return
     
     def run():
         current_status['is_running'] = True
         current_status['start_time'] = datetime.utcnow()
-        socketio.emit('session_started', {'type': 'scheduled'})
         
         try:
             monitor.run_session()
             socketio.emit('session_completed', {'type': 'scheduled'})
         except Exception as e:
+            logger.error(f"Session error: {e}")
             socketio.emit('session_error', {'error': str(e)})
         finally:
             current_status['is_running'] = False
@@ -137,6 +147,7 @@ def init_scheduler():
     
     if not scheduler.running:
         scheduler.start()
+    logger.info(f"Scheduler started with {sessions} sessions")
 
 init_scheduler()
 
