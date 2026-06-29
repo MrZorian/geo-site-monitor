@@ -52,6 +52,7 @@ def get_logs():
             'target_url': log.get('target_url', '-'),
             'proxy_used': proxy[:25] + '...' if len(proxy) > 25 else proxy,
             'pages_visited': log.get('pages_visited', 0),
+            'ads_clicked': log.get('ads_clicked', 0),
             'session_duration': round(log.get('session_duration', 0), 0),
             'status': log.get('status', 'unknown'),
             'status_color': 'success' if log.get('status') == 'success' else 'error' if log.get('status') == 'failed' else 'warning'
