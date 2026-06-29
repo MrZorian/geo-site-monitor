@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logs | Website Monitor</title>
+    <title>Session Logs | Website Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -91,6 +91,17 @@
         .status-badge.success { background: rgba(16,185,129,0.2); color: #10b981; }
         .status-badge.error { background: rgba(239,68,68,0.2); color: #ef4444; }
         
+        .stat-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .stat-box.pages { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .stat-box.ads { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        
         .proxy-cell { 
             font-family: monospace; 
             font-size: 0.875rem; 
@@ -112,9 +123,7 @@
             border: none;
             cursor: pointer;
             font-size: 1.25rem;
-            box-shadow: 0 4px 20px rgba(99,102,241,0.4);
         }
-        .refresh-btn:hover { transform: scale(1.1); }
         .refresh-btn.spinning { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
@@ -124,14 +133,14 @@
         <div class="nav-brand"><i class="fas fa-chart-line"></i> Website Monitor</div>
         <ul class="nav-links">
             <li><a href="/">Dashboard</a></li>
-            <li><a href="/logs" class="active">Logs</a></li>
+            <li><a href="/logs" class="active">Full Logs</a></li>
             <li><a href="/settings">Settings</a></li>
         </ul>
     </nav>
 
     <div class="container">
         <h1><i class="fas fa-history"></i> Session Logs</h1>
-        <p class="subtitle">Complete history of all monitoring sessions</p>
+        <p class="subtitle">Complete history with pages visited and ads clicked</p>
 
         <div class="filters">
             <input type="text" class="filter-input" id="searchInput" placeholder="Search...">
@@ -151,15 +160,16 @@
                     <tr>
                         <th>ID</th>
                         <th>Time</th>
-                        <th>Target</th>
-                        <th>Proxy</th>
+                        <th>Target Website</th>
                         <th>Pages</th>
+                        <th>Ads Clicked</th>
                         <th>Duration</th>
+                        <th>Proxy</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="logsTable">
-                    <tr><td colspan="7" style="text-align: center; padding: 3rem; color: #94a3b8;">Loading...</td></tr>
+                    <tr><td colspan="8" style="text-align: center; padding: 3rem; color: #94a3b8;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -190,7 +200,7 @@
         function renderLogs(logs) {
             const tbody = document.getElementById('logsTable');
             if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem;">No logs found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 3rem;">No logs found</td></tr>';
                 return;
             }
             
@@ -198,10 +208,19 @@
                 <tr>
                     <td>#${log.id}</td>
                     <td>${log.timestamp}</td>
-                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${log.target_url || '-'}</td>
+                    <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">${log.target_url}</td>
+                    <td>
+                        <span class="stat-box pages">
+                            <i class="fas fa-file"></i> ${log.pages_visited}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="stat-box ads">
+                            <i class="fas fa-ad"></i> ${log.ads_clicked}
+                        </span>
+                    </td>
+                    <td>${log.session_duration}s</td>
                     <td class="proxy-cell">${log.proxy_used}</td>
-                    <td>${log.pages_visited}</td>
-                    <td>${log.session_duration.toFixed(0)}s</td>
                     <td><span class="status-badge ${log.status_color}">${log.status}</span></td>
                 </tr>
             `).join('');
@@ -209,8 +228,8 @@
         
         function exportLogs() {
             const csv = [
-                ['ID', 'Timestamp', 'Target', 'Proxy', 'Pages', 'Duration', 'Status'],
-                ...allLogs.map(l => [l.id, l.timestamp, l.target_url, l.proxy_used, l.pages_visited, l.session_duration, l.status])
+                ['ID', 'Timestamp', 'Target', 'Pages', 'Ads Clicked', 'Duration', 'Proxy', 'Status'],
+                ...allLogs.map(l => [l.id, l.timestamp, l.target_url, l.pages_visited, l.ads_clicked, l.session_duration, l.proxy_used, l.status])
             ].map(row => row.join(',')).join('\n');
             
             const blob = new Blob([csv], { type: 'text/csv' });
