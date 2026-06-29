@@ -58,7 +58,6 @@ class ConfigSetting:
     def set(key, value):
         storage.set_config(key, value)
 
-# For compatibility
 class SessionLog:
     pass
 
