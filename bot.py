@@ -62,7 +62,7 @@ class WebsiteMonitor:
         chrome_options.add_argument('--no-zygote')
         chrome_options.add_argument('--disable-setuid-sandbox')
         
-        # Allow popups for ads
+        # IMPORTANT: Allow popups and notifications for ads
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-popup-blocking"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
@@ -88,7 +88,6 @@ class WebsiteMonitor:
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.set_page_load_timeout(30)
             
-            # Store main window handle
             self.main_window = self.driver.current_window_handle
             
             logger.info("Driver initialized")
@@ -102,26 +101,17 @@ class WebsiteMonitor:
         """Scroll like human"""
         try:
             start = time.time()
-            last_scroll = 0
-            
             while time.time() - start < duration:
-                # Random scroll amount
                 scroll_pixels = random.randint(200, 800)
                 scroll_direction = random.choice([1, -1])
                 
                 self.driver.execute_script(f"window.scrollBy(0, {scroll_pixels * scroll_direction});")
-                last_scroll += scroll_pixels * scroll_direction
+                time.sleep(random.uniform(1, 4))
                 
-                # Random pause (reading time)
-                pause = random.uniform(1, 4)
-                time.sleep(pause)
-                
-                # Occasionally scroll back up slightly (re-reading)
                 if random.random() < 0.25:
                     self.driver.execute_script(f"window.scrollBy(0, -{random.randint(100, 300)});")
                     time.sleep(random.uniform(2, 5))
                 
-                # Stop if reached bottom and been there a while
                 scroll_height = self.driver.execute_script("return document.body.scrollHeight")
                 current_pos = self.driver.execute_script("return window.pageYOffset + window.innerHeight")
                 
@@ -132,132 +122,218 @@ class WebsiteMonitor:
             logger.warning(f"Scroll error: {e}")
     
     def find_and_click_ad(self):
-        """Find and click on ads to earn money"""
+        """Find and click POPUP/SOCIALBAR ads like in your screenshot"""
         try:
-            logger.info("Looking for ads to click...")
+            logger.info("Looking for POPUP and SOCIALBAR ads...")
             
-            # Multiple ad selectors
-            ad_selectors = [
-                "ins.adsbygoogle",
-                "iframe[id*='google_ads']",
-                "iframe[name*='google']",
-                "div[id*='google_ad']",
-                "[data-ad-slot]",
-                "[data-ad-client]",
-                ".ad",
-                ".advertisement",
-                ".banner-ad",
-                "[class*='ad-']",
-                "[class*='ads-']",
-                "[id*='ad-']",
-                "[id*='ads-']",
-                "div[class*='advert']",
-                "div[id*='advert']",
-                "a[href*='ad.' i]",
-                "a[href*='ads.' i]",
-                "a[href*='click']",
-                "a[href*='redirect']",
-                "img[width='728'][height='90']",
-                "img[width='300'][height='250']",
-                "img[width='160'][height='600']",
-                "a[target='_blank']",
-                "[class*='sponsored']",
-                "[class*='promoted']",
-                "iframe:not([src*='youtube']):not([src*='vimeo'])"
+            # POPUP AD SELECTORS (like your Facebook notification ad)
+            popup_selectors = [
+                # Notification style popups (top right, top left, bottom)
+                "[class*='notification']",
+                "[class*='popup']",
+                "[class*='popup-container']",
+                "[class*='popup-content']",
+                "[class*='modal']",
+                "[class*='modal-dialog']",
+                "[class*='alert']",
+                "[class*='toast']",
+                "[class*='message']",
+                
+                # Social bar ads
+                "[class*='social-bar']",
+                "[class*='socialbar']",
+                "[class*='social-float']",
+                "[class*='floating-bar']",
+                "[class*='float-ads']",
+                "[class*='sticky-ads']",
+                "[class*='bottom-bar']",
+                "[class*='top-bar']",
+                
+                # Click here buttons
+                "button:contains('Click Here')",
+                "a:contains('Click Here')",
+                "[class*='click-here']",
+                "[class*='cta']",
+                "[class*='cta-button']",
+                
+                # Banner ads with images
+                "img[src*='ad']",
+                "img[src*='ads']",
+                "img[alt*='ad' i]",
+                "img[alt*='click' i]",
+                "img[alt*='sponsored' i]",
+                
+                # Common ad containers
+                "[class*='ad-container']",
+                "[class*='ads-container']",
+                "[class*='banner']",
+                "[class*='banner-ad']",
+                
+                # Divs with ad text
+                "div:contains('Sponsored')",
+                "div:contains('Advertisement')",
+                "div:contains('AD')",
+                
+                # Iframes (ad networks use these)
+                "iframe",
+                
+                # Specific positions (fixed position = likely popup)
+                "[style*='position: fixed']",
+                "[style*='position:fixed']",
+                "[style*='z-index: 999']",
+                "[style*='z-index:999']",
             ]
+            
+            # Also search by TEXT content for "Click Here"
+            click_here_xpath = "//*[contains(text(), 'Click Here') or contains(text(), 'click here') or contains(text(), 'CLICK HERE')]"
             
             all_ads = []
             
-            for selector in ad_selectors:
+            # Try CSS selectors
+            for selector in popup_selectors:
                 try:
                     elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                     for el in elements:
                         try:
-                            if el.is_displayed() and el.size['height'] > 30 and el.size['width'] > 30:
-                                if el.tag_name in ['a', 'button', 'iframe', 'ins', 'div', 'img']:
-                                    all_ads.append(el)
+                            if el.is_displayed():
+                                size = el.size
+                                if size['height'] > 20 and size['width'] > 50:
+                                    all_ads.append(('css', el))
+                                    logger.info(f"Found popup element: {selector[:30]}...")
                         except:
                             continue
                 except:
                     continue
             
-            # Remove duplicates
-            unique_ads = []
-            seen = set()
-            for ad in all_ads:
-                try:
-                    ad_id = ad.id
-                    if ad_id not in seen:
-                        seen.add(ad_id)
-                        unique_ads.append(ad)
-                except:
-                    unique_ads.append(ad)
+            # Try XPath for text-based ads
+            try:
+                text_ads = self.driver.find_elements(By.XPATH, click_here_xpath)
+                for el in text_ads:
+                    try:
+                        if el.is_displayed():
+                            # Get parent clickable element
+                            parent = el.find_element(By.XPATH, "..")
+                            if parent.is_displayed():
+                                all_ads.append(('xpath', parent))
+                                logger.info("Found 'Click Here' text ad")
+                    except:
+                        all_ads.append(('xpath', el))
+            except:
+                pass
             
-            if not unique_ads:
-                logger.info("No ads found on this page")
+            # Also look for ANY clickable element with "Click" in text
+            try:
+                all_clickables = self.driver.find_elements(By.XPATH, "//a | //button")
+                for el in all_clickables:
+                    try:
+                        text = el.text.lower()
+                        if 'click' in text or 'visit' in text or 'learn more' in text:
+                            if el.is_displayed() and el not in [a[1] for a in all_ads]:
+                                all_ads.append(('clickable', el))
+                                logger.info(f"Found clickable with text: {text[:20]}")
+                    except:
+                        continue
+            except:
+                pass
+            
+            if not all_ads:
+                logger.info("No popup/socialbar ads found")
                 return False
             
-            logger.info(f"Found {len(unique_ads)} potential ads")
+            logger.info(f"Found {len(all_ads)} potential ads")
             
-            # Pick random ad
-            ad = random.choice(unique_ads[:5])
+            # Pick random ad (prefer first few)
+            ad_type, ad = random.choice(all_ads[:min(5, len(all_ads))])
             
-            # Scroll to ad
-            self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", ad)
-            time.sleep(random.uniform(2, 4))
+            # Scroll to ad if needed
+            try:
+                self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", ad)
+                time.sleep(random.uniform(1, 3))
+            except:
+                pass  # Fixed position popups don't need scrolling
             
-            # Hover over ad first
-            ActionChains(self.driver).move_to_element(ad).pause(random.uniform(0.5, 1.5)).perform()
+            # Hover first (human-like)
+            try:
+                ActionChains(self.driver).move_to_element(ad).pause(random.uniform(0.5, 1)).perform()
+            except:
+                pass
             
-            # Click the ad
-            logger.info("CLICKING ON AD!")
+            # CLICK THE AD
+            logger.info(f"CLICKING AD! (type: {ad_type})")
             
             try:
                 ad.click()
             except:
-                self.driver.execute_script("arguments[0].click();", ad)
+                try:
+                    self.driver.execute_script("arguments[0].click();", ad)
+                except Exception as e:
+                    logger.error(f"Click failed: {e}")
+                    return False
             
-            # Wait for new tab/popup
-            time.sleep(3)
+            # Wait for popup/new tab
+            time.sleep(4)
             
-            # Switch to new tab if opened
+            # Handle new window/tab
             current_handles = self.driver.window_handles
+            
             if len(current_handles) > 1:
+                # New tab opened
                 new_window = [h for h in current_handles if h != self.main_window][0]
                 self.driver.switch_to.window(new_window)
-                logger.info("Switched to ad tab")
+                logger.info("Switched to ad popup/tab")
                 
-                # SCROLL AD PAGE FOR 30-40 SECONDS
+                # SCROLL FOR 30-40 SECONDS
                 ad_scroll_time = random.randint(30, 40)
-                logger.info(f"Scrolling ad page for {ad_scroll_time} seconds...")
+                logger.info(f"Scrolling ad for {ad_scroll_time} seconds...")
                 self.human_like_scroll(ad_scroll_time)
                 
-                # Close ad tab and return
+                # Close and return
                 self.driver.close()
                 self.driver.switch_to.window(self.main_window)
-                logger.info("Returned to main page")
+                logger.info("Returned to main")
                 return True
             else:
-                # Ad opened in same tab
-                logger.info("Ad opened in same tab")
+                # Same tab redirect or popup overlay
+                logger.info("Ad opened in same window")
+                
+                # Scroll for 30-40 seconds
                 ad_scroll_time = random.randint(30, 40)
-                logger.info(f"Scrolling ad page for {ad_scroll_time} seconds...")
+                logger.info(f"Scrolling for {ad_scroll_time} seconds...")
                 self.human_like_scroll(ad_scroll_time)
                 
-                # Go back
-                self.driver.back()
-                time.sleep(2)
+                # Try to close popup if there's a close button
+                try:
+                    close_buttons = self.driver.find_elements(By.CSS_SELECTOR, "[class*='close'], [class*='dismiss'], .x, .close-btn")
+                    for btn in close_buttons:
+                        if btn.is_displayed():
+                            btn.click()
+                            logger.info("Closed popup")
+                            time.sleep(1)
+                            break
+                except:
+                    pass
+                
+                # Go back if needed
+                try:
+                    current_url = self.driver.current_url
+                    if target_url not in current_url:
+                        self.driver.back()
+                        time.sleep(2)
+                        logger.info("Went back")
+                except:
+                    pass
+                
                 return True
                 
         except Exception as e:
-            logger.warning(f"Ad click failed: {e}")
+            logger.warning(f"Ad click error: {e}")
         
         return False
     
     def click_navigation_link(self, target_domain):
-        """Click navigation links like About, Contact, etc."""
+        """Click About, Contact, etc."""
         try:
-            nav_keywords = ['about', 'contact', 'services', 'products', 'blog', 'news', 'portfolio', 'gallery']
+            nav_keywords = ['about', 'contact', 'services', 'products', 'blog', 'news']
             
             links = self.driver.find_elements(By.TAG_NAME, "a")
             nav_links = []
@@ -267,9 +343,7 @@ class WebsiteMonitor:
                     text = link.text.lower().strip()
                     href = link.get_attribute('href') or ''
                     
-                    is_nav = any(keyword in text or keyword in href.lower() for keyword in nav_keywords)
-                    
-                    if is_nav and link.is_displayed():
+                    if any(k in text for k in nav_keywords):
                         if target_domain in href or href.startswith('/'):
                             nav_links.append(link)
                 except:
@@ -277,8 +351,8 @@ class WebsiteMonitor:
             
             if nav_links:
                 link = random.choice(nav_links)
-                text = link.text.strip() or "Navigation"
-                logger.info(f"Clicking navigation: {text}")
+                text = link.text.strip() or "Nav"
+                logger.info(f"Clicking: {text}")
                 
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", link)
                 time.sleep(random.uniform(1, 3))
@@ -294,7 +368,7 @@ class WebsiteMonitor:
         return False
     
     def click_random_internal_link(self, target_domain):
-        """Click any random internal link"""
+        """Click any internal link"""
         try:
             links = self.driver.find_elements(By.TAG_NAME, "a")
             internal_links = []
@@ -303,14 +377,14 @@ class WebsiteMonitor:
                 try:
                     href = link.get_attribute('href')
                     if href and target_domain in href and link.is_displayed():
-                        if not href.startswith('#') and not href.startswith('javascript') and not href.startswith('mailto'):
+                        if not href.startswith('#') and not href.startswith('javascript'):
                             internal_links.append(link)
                 except:
                     continue
             
             if internal_links:
                 link = random.choice(internal_links[:8])
-                logger.info("Clicking internal link...")
+                logger.info("Clicking article/link...")
                 
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", link)
                 time.sleep(random.uniform(2, 4))
@@ -321,12 +395,12 @@ class WebsiteMonitor:
                 return True
                 
         except Exception as e:
-            logger.warning(f"Internal link failed: {e}")
+            logger.warning(f"Link click failed: {e}")
         
         return False
     
     def run_session(self):
-        """Run session with ad clicking and multi-page visits"""
+        """Run session with POPUP AD clicking"""
         from database import storage
         
         targets = self.get_target_urls()
@@ -353,51 +427,51 @@ class WebsiteMonitor:
             
             session_data['proxy_used'] = self.current_proxy or 'direct'
             
-            # STEP 1: Visit main page
-            logger.info("=== STEP 1: Main Page ===")
+            # PAGE 1: Main page
+            logger.info("=== PAGE 1: Main Page ===")
             self.driver.get(target_url)
-            time.sleep(random.uniform(4, 7))
+            time.sleep(random.uniform(5, 8))
             self.human_like_scroll(random.randint(15, 25))
             session_data['pages_visited'] += 1
             
-            # STEP 2: Click ad on main page
-            logger.info("=== STEP 2: Click Ad ===")
-            if self.find_and_click_ad():
-                session_data['ads_clicked'] += 1
-                session_data['pages_visited'] += 1
+            # Wait for ads to load (popups often appear after delay)
+            time.sleep(3)
             
-            # STEP 3: Navigation page
-            logger.info("=== STEP 3: Navigation ===")
-            if self.click_navigation_link(target_domain):
-                session_data['pages_visited'] += 1
-                time.sleep(random.uniform(3, 6))
+            # TRY MULTIPLE TIMES TO CLICK ADS
+            for attempt in range(3):  # Try 3 times
+                logger.info(f"=== AD ATTEMPT {attempt + 1} ===")
                 if self.find_and_click_ad():
                     session_data['ads_clicked'] += 1
                     session_data['pages_visited'] += 1
+                    time.sleep(2)  # Wait before looking for more
+                else:
+                    break
             
-            # STEP 4: Another page
-            logger.info("=== STEP 4: Another Page ===")
-            if self.click_random_internal_link(target_domain):
-                session_data['pages_visited'] += 1
-                time.sleep(random.uniform(3, 6))
-                if self.find_and_click_ad():
-                    session_data['ads_clicked'] += 1
+            # Navigation pages
+            for i in range(3):
+                logger.info(f"=== NAVIGATION PAGE {i + 1} ===")
+                
+                # Try nav link
+                if self.click_navigation_link(target_domain):
                     session_data['pages_visited'] += 1
+                    
+                    # Try ads on this page
+                    time.sleep(3)
+                    if self.find_and_click_ad():
+                        session_data['ads_clicked'] += 1
+                        session_data['pages_visited'] += 1
+                else:
+                    # Try random link
+                    if self.click_random_internal_link(target_domain):
+                        session_data['pages_visited'] += 1
             
-            # STEP 5: Final page
-            logger.info("=== STEP 5: Final Page ===")
-            if self.click_random_internal_link(target_domain):
-                session_data['pages_visited'] += 1
-                time.sleep(random.uniform(5, 10))
-                self.human_like_scroll(random.randint(10, 15))
-            
-            # Ensure 4-5 minute duration
+            # Ensure 4-5 minutes
             elapsed = time.time() - session_data['start_time']
             target_duration = random.randint(240, 300)
             
             if elapsed < target_duration:
                 wait_time = target_duration - elapsed
-                logger.info(f"Waiting extra {wait_time:.0f}s...")
+                logger.info(f"Waiting {wait_time:.0f}s...")
                 time.sleep(wait_time)
             
             total_duration = time.time() - session_data['start_time']
