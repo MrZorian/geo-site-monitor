@@ -47,6 +47,9 @@
             border-radius: 0.5rem; 
             cursor: pointer;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .btn-primary { 
             background: linear-gradient(135deg, #6366f1, #8b5cf6); 
@@ -57,7 +60,7 @@
         .stats-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 1.5rem; 
+            gap: 1rem; 
             margin-bottom: 2rem;
         }
         .stat-card { 
@@ -67,21 +70,11 @@
             padding: 1.5rem;
             text-align: center;
         }
-        .stat-card h3 { 
-            color: #94a3b8; 
-            font-size: 0.875rem; 
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-        }
-        .stat-value { 
-            font-size: 2.5rem; 
-            font-weight: bold; 
-        }
-        .stat-value.blue { color: #6366f1; }
-        .stat-value.green { color: #10b981; }
-        .stat-value.orange { color: #f59e0b; }
-        .stat-value.red { color: #ef4444; }
-        .stat-value.purple { color: #8b5cf6; }
+        .stat-card h3 { color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: #6366f1; }
+        .stat-card.green .stat-value { color: #10b981; }
+        .stat-card.orange .stat-value { color: #f59e0b; }
+        .stat-card.red .stat-value { color: #ef4444; }
         
         .target-card { 
             background: #111936; 
@@ -96,4 +89,264 @@
             background: rgba(99,102,241,0.2); 
             color: #6366f1; 
             padding: 0.5rem 1rem; 
-            border-radius
+            border-radius: 2rem;
+            font-size: 0.875rem;
+        }
+        
+        .live-status { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            margin-bottom: 2rem;
+        }
+        .live-status.running { border-color: #10b981; }
+        .live-indicator { 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            background: #10b981;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        .live-status.running .live-indicator { animation: blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        
+        .logs-card { 
+            background: #111936; 
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 1rem; 
+            overflow: hidden;
+        }
+        .logs-header { 
+            padding: 1.5rem; 
+            border-bottom: 1px solid rgba(99,102,241,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logs-container { max-height: 500px; overflow-y: auto; }
+        .log-entry { 
+            padding: 1rem 1.5rem; 
+            border-bottom: 1px solid rgba(99,102,241,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .log-status { width: 8px; height: 8px; border-radius: 50%; }
+        .log-status.success { background: #10b981; }
+        .log-status.error { background: #ef4444; }
+        .log-status.warning { background: #f59e0b; }
+        
+        .log-main { flex: 1; }
+        .log-time { font-size: 0.75rem; color: #94a3b8; }
+        .log-target { font-weight: 500; margin: 0.25rem 0; }
+        .log-meta { display: flex; gap: 1rem; font-size: 0.875rem; color: #94a3b8; }
+        .log-stat { 
+            background: rgba(99,102,241,0.1); 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.25rem;
+        }
+        .log-stat.ads { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        
+        .toast { 
+            position: fixed; 
+            bottom: 2rem; 
+            right: 2rem; 
+            background: #111936;
+            border-left: 4px solid #6366f1;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+        }
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><i class="fas fa-chart-line"></i> Website Monitor</div>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Dashboard</a></li>
+            <li><a href="/logs">Full Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Dashboard Overview</h1>
+                <p style="color: #94a3b8;">Real-time monitoring and analytics</p>
+            </div>
+            <button id="runNowBtn" class="btn btn-primary">
+                <i class="fas fa-play"></i> Run Session Now
+            </button>
+        </div>
+
+        <div class="live-status" id="liveStatus">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <span class="live-indicator"></span>
+                <span id="liveTitle">System Idle</span>
+            </div>
+            <div id="liveDetails" style="color: #94a3b8;">Waiting for next session...</div>
+        </div>
+
+        <div class="target-card">
+            <h3><i class="fas fa-globe"></i> Monitored Websites</h3>
+            <div class="target-list" id="targetList">
+                <span style="color: #94a3b8;">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Stats Grid with Pages and Ads -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Today's Sessions</h3>
+                <div class="stat-value" id="todaySessions">-</div>
+            </div>
+            <div class="stat-card green">
+                <h3>Today's Pages</h3>
+                <div class="stat-value" id="todayPages">-</div>
+            </div>
+            <div class="stat-card orange">
+                <h3>Today's Ads Clicked</h3>
+                <div class="stat-value" id="todayAds">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Sessions</h3>
+                <div class="stat-value" id="totalSessions">-</div>
+            </div>
+            <div class="stat-card green">
+                <h3>Total Pages</h3>
+                <div class="stat-value" id="totalPages">-</div>
+            </div>
+            <div class="stat-card orange">
+                <h3>Total Ads Clicked</h3>
+                <div class="stat-value" id="totalAds">-</div>
+            </div>
+        </div>
+
+        <!-- Live Activity with Pages & Ads -->
+        <div class="logs-card">
+            <div class="logs-header">
+                <h3><i class="fas fa-stream"></i> Recent Activity</h3>
+                <span style="background: #ef4444; color: white; padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem;">LIVE</span>
+            </div>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-entry">
+                    <div class="log-content" style="color: #94a3b8;">Waiting for activity...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const socket = io();
+        
+        async function loadData() {
+            try {
+                const stats = await fetch('/api/stats').then(r => r.json());
+                
+                // Update stats
+                document.getElementById('todaySessions').textContent = stats.today_sessions;
+                document.getElementById('todayPages').textContent = stats.today_pages || 0;
+                document.getElementById('todayAds').textContent = stats.today_ads || 0;
+                document.getElementById('totalSessions').textContent = stats.total_sessions;
+                document.getElementById('totalPages').textContent = stats.total_pages || 0;
+                document.getElementById('totalAds').textContent = stats.total_ads || 0;
+                
+                // Show targets
+                if (stats.target_stats) {
+                    const targets = Object.keys(stats.target_stats);
+                    document.getElementById('targetList').innerHTML = targets.map(url => 
+                        `<span class="target-badge">${url}</span>`
+                    ).join('');
+                }
+                
+                // Load logs with pages & ads
+                const logs = await fetch('/api/logs').then(r => r.json());
+                if (logs.logs.length > 0) {
+                    document.getElementById('logsContainer').innerHTML = logs.logs.slice(0, 10).map(log => `
+                        <div class="log-entry">
+                            <div class="log-status ${log.status_color}"></div>
+                            <div class="log-main">
+                                <div class="log-time">${log.timestamp}</div>
+                                <div class="log-target">${log.target_url}</div>
+                                <div class="log-meta">
+                                    <span class="log-stat"><i class="fas fa-file"></i> ${log.pages_visited} pages</span>
+                                    <span class="log-stat ads"><i class="fas fa-ad"></i> ${log.ads_clicked} ads</span>
+                                    <span><i class="fas fa-clock"></i> ${log.session_duration}s</span>
+                                    <span style="font-family: monospace;">${log.proxy_used}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+        
+        async function checkStatus() {
+            try {
+                const status = await fetch('/api/status').then(r => r.json());
+                const liveStatus = document.getElementById('liveStatus');
+                const liveTitle = document.getElementById('liveTitle');
+                const runBtn = document.getElementById('runNowBtn');
+                
+                if (status.is_running) {
+                    liveStatus.classList.add('running');
+                    liveTitle.textContent = 'Session in Progress';
+                    document.getElementById('liveDetails').textContent = 'Running...';
+                    runBtn.disabled = true;
+                    runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+                } else {
+                    liveStatus.classList.remove('running');
+                    liveTitle.textContent = 'System Idle';
+                    document.getElementById('liveDetails').textContent = 'Waiting for next session...';
+                    runBtn.disabled = false;
+                    runBtn.innerHTML = '<i class="fas fa-play"></i> Run Session Now';
+                }
+            } catch (e) {}
+        }
+        
+        document.getElementById('runNowBtn').addEventListener('click', async () => {
+            try {
+                const result = await fetch('/api/run-now', { method: 'POST' }).then(r => r.json());
+                if (result.success) {
+                    showToast('Session started!');
+                    checkStatus();
+                }
+            } catch (e) {
+                showToast('Failed to start', true);
+            }
+        });
+        
+        socket.on('session_started', () => {
+            showToast('Session started!');
+            checkStatus();
+        });
+        
+        socket.on('session_completed', () => {
+            showToast('Session completed!');
+            loadData();
+            checkStatus();
+        });
+        
+        function showToast(message, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.borderLeftColor = isError ? '#ef4444' : '#6366f1';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        loadData();
+        checkStatus();
+        setInterval(() => { loadData(); checkStatus(); }, 10000);
+    </script>
+</body>
+</html>
